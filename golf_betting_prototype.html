@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donegal Golf 2026 – Betting App</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; }
+.app { max-width: 420px; margin: 0 auto; background: #fff; min-height: 100vh; position: relative; padding-bottom: 120px; }
+.header { padding: 14px 16px 10px; border-bottom: 0.5px solid #e0e0dc; background: #fff; }
+.header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.title { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+.subtitle { font-size: 12px; color: #888; margin-top: 2px; }
+.toggle-wrap { display: flex; background: #f0f0ed; border-radius: 8px; padding: 2px; gap: 2px; }
+.tog { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: none; background: transparent; color: #888; cursor: pointer; font-family: inherit; }
+.tog.active { background: #fff; color: #1a1a1a; font-weight: 500; border: 0.5px solid #e0e0dc; }
+.tabs { display: flex; overflow-x: auto; padding: 0 16px; border-bottom: 0.5px solid #e0e0dc; background: #fff; }
+.tab { font-size: 12px; padding: 8px 10px; white-space: nowrap; border: none; background: transparent; color: #888; cursor: pointer; font-family: inherit; border-bottom: 2px solid transparent; margin-bottom: -0.5px; }
+.tab.active { color: #1a1a1a; font-weight: 500; border-bottom-color: #1a1a1a; }
+.pill-nav { display: flex; align-items: center; padding: 8px 8px 4px; gap: 4px; }
+.pill-arrow { width: 28px; height: 28px; border: 0.5px solid #e0e0dc; border-radius: 50%; background: #fff; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #1a1a1a; font-family: inherit; transition: background 0.1s; }
+.pill-arrow:hover { background: #f0f0ed; }
+.pill-arrow:disabled { opacity: 0.25; cursor: default; }
+.pill-row { display: flex; gap: 6px; overflow-x: auto; padding: 2px 4px; scrollbar-width: none; flex: 1; }
+.pill-row::-webkit-scrollbar { display: none; }
+.market-pill { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 0.5px solid #e0e0dc; background: transparent; color: #888; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.market-pill.active { background: #1a1a1a; color: #fff; border-color: transparent; }
+.market-section { padding: 12px 16px 0; }
+.market-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.player-row { display: flex; align-items: center; padding: 9px 12px; background: #fff; border: 0.5px solid #e0e0dc; border-radius: 8px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.15s; }
+.player-row:hover { border-color: #bbb; }
+.player-row.selected { border-color: #1a1a1a; border-width: 1.5px; }
+.player-avatar { width: 30px; height: 30px; border-radius: 50%; background: #f0f0ed; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #666; margin-right: 10px; flex-shrink: 0; }
+.player-name { font-size: 14px; color: #1a1a1a; flex: 1; }
+.price-pill { font-size: 13px; font-weight: 500; color: #1a1a1a; background: #f0f0ed; padding: 3px 10px; border-radius: 20px; }
+.price-pill.fav { background: #eaf3de; color: #3b6d11; }
+.betslip { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 420px; background: #fff; border-top: 0.5px solid #e0e0dc; padding: 12px 16px; z-index: 10; }
+.betslip-collapsed { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.betslip-label { font-size: 13px; font-weight: 500; }
+.betslip-hint { font-size: 12px; color: #888; }
+.betslip-selection { background: #f5f5f3; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+.betslip-sel-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+.betslip-player { font-size: 13px; font-weight: 500; }
+.betslip-market { font-size: 11px; color: #888; margin-top: 1px; }
+.betslip-price { font-size: 14px; font-weight: 500; color: #3b6d11; }
+.clear-btn { font-size: 12px; color: #888; background: none; border: none; cursor: pointer; padding: 0; font-family: inherit; }
+.stake-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.stake-label { font-size: 13px; color: #888; white-space: nowrap; }
+.stake-input { flex: 1; font-size: 14px; font-family: inherit; padding: 7px 10px; border: 0.5px solid #ccc; border-radius: 8px; background: #fff; color: #1a1a1a; outline: none; }
+.stake-input:focus { border-color: #888; }
+.returns-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 10px; }
+.returns-label { color: #888; }
+.returns-val { font-weight: 500; }
+.confirm-btn { width: 100%; padding: 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.confirm-btn:disabled { opacity: 0.35; cursor: default; }
+.score-section { padding: 12px 16px; }
+.score-card { background: #fff; border: 0.5px solid #e0e0dc; border-radius: 8px; overflow: hidden; }
+.score-row { display: grid; grid-template-columns: 1fr repeat(4, 32px) 44px; gap: 0; padding: 7px 12px; border-bottom: 0.5px solid #e0e0dc; align-items: center; }
+.score-row.header-row { background: #f5f5f3; }
+.score-row:last-child { border-bottom: none; }
+.score-name { font-size: 13px; color: #1a1a1a; }
+.score-cell { font-size: 12px; text-align: center; color: #888; }
+.score-cell.winner { color: #3b6d11; font-weight: 500; }
+.score-cell.total { font-size: 13px; font-weight: 500; color: #1a1a1a; text-align: right; }
+.score-hdr { font-size: 10px; color: #888; text-align: center; }
+.score-hdr.total { text-align: right; }
+.toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #fff; border: 0.5px solid #ccc; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 200; display: none; white-space: nowrap; font-family: inherit; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="title">Donegal Golf 2026</div>
+        <div class="subtitle">Win markets</div>
+      </div>
+      <div class="toggle-wrap">
+        <button class="tog" id="dec-btn" onclick="setOdds('dec')">Dec</button>
+        <button class="tog active" id="frac-btn" onclick="setOdds('frac')">Frac</button>
+      </div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('markets',this)">Markets</button>
+    <button class="tab" onclick="setTab('scores',this)">Leaderboard</button>
+  </div>
+
+  <div id="markets-view">
+    <div class="pill-nav">
+      <button class="pill-arrow" id="pill-prev" onclick="shiftMarket(-1)">&#8592;</button>
+      <div class="pill-row" id="market-pills"></div>
+      <button class="pill-arrow" id="pill-next" onclick="shiftMarket(1)">&#8594;</button>
+    </div>
+    <div class="market-section" id="player-list"></div>
+  </div>
+
+  <div id="scores-view" style="display:none">
+    <div class="score-section">
+      <div class="market-label" style="margin-bottom:8px">Cumulative leaderboard</div>
+      <div class="score-card" id="score-table"></div>
+    </div>
+  </div>
+</div>
+
+<div class="betslip" id="betslip">
+  <div class="betslip-collapsed" id="slip-collapsed" onclick="toggleSlip()" style="display:none">
+    <span class="betslip-label" id="slip-summary">Bet slip</span>
+    <span class="betslip-hint">Tap to edit ↑</span>
+  </div>
+  <div class="betslip-open" id="slip-open">
+    <div class="betslip-hint" style="text-align:center;padding:6px 0">Select a player to add to bet slip</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MARKETS = [
+  {id:'r1', label:'Round 1 – Portsalon'},
+  {id:'r2', label:'Round 2 – Sandy Hills'},
+  {id:'r3', label:'Round 3 – St. Pats'},
+  {id:'r4', label:'Round 4 – Old Tom Morris'},
+  {id:'overall', label:'Overall Winner'},
+];
+
+const PRICES = {
+  r1:      {'Dave J':4,   Ross:8,    Cillian:11,  Steve:34,  Ryan:8,   Paddy:3.5, Paul:4.5,  Hugh:34,  Gordon:17,  Noel:34,  Trev:null, Barry:null, Colm:null},
+  r2:      {'Dave J':8,   Ross:3,    Cillian:11,  Steve:42,  Ryan:11,  Paddy:12,  Paul:11,   Hugh:8,   Gordon:42,  Noel:42,  Trev:5.5,  Barry:24,   Colm:85},
+  r3:      {'Dave J':2,   Ross:6,    Cillian:13,  Steve:9,   Ryan:13,  Paddy:5,   Paul:13,   Hugh:33,  Gordon:20,  Noel:50,  Trev:13,   Barry:101,  Colm:202},
+  r4:      {'Dave J':6,   Ross:5.5,  Cillian:17,  Steve:11,  Ryan:17,  Paddy:7,   Paul:8,    Hugh:17,  Gordon:8,   Noel:42,  Trev:5.5,  Barry:85,   Colm:85},
+  overall: {'Dave J':3,   Ross:4,    Cillian:17,  Steve:8,   Ryan:17,  Paddy:5.5, Paul:11,   Hugh:34,  Gordon:17,  Noel:17,  Trev:null, Barry:null, Colm:null},
+};
+
+// Filter out N/A (null) players per market
+Object.keys(PRICES).forEach(m => {
+  Object.keys(PRICES[m]).forEach(p => {
+    if (PRICES[m][p] === null) delete PRICES[m][p];
+  });
+});
+
+const ALL_PLAYERS = ['Dave J','Ross','Cillian','Barry','Colm','Steve','Ryan','Paddy','Paul','Hugh','Gordon','Trev','Noel'];
+
+// Scores — empty to start, will be populated from sheet
+const SCORES = {
+  'Dave J': [null,null,null,null],
+  Ross:     [null,null,null,null],
+  Cillian:  [null,null,null,null],
+  Barry:    [null,null,null,null],
+  Colm:     [null,null,null,null],
+  Steve:    [null,null,null,null],
+  Ryan:     [null,null,null,null],
+  Paddy:    [null,null,null,null],
+  Paul:     [null,null,null,null],
+  Hugh:     [null,null,null,null],
+  Gordon:   [null,null,null,null],
+  Trev:     [null,null,null,null],
+  Noel:     [null,null,null,null],
+};
+
+let oddsMode = 'frac';
+let selectedMarket = 'r1';
+let slip = null;
+let slipOpen = false;
+let bettorName = '';
+
+function toFrac(dec) {
+  const n = dec - 1;
+  if (n <= 0) return 'EVS';
+  const fracs = [[1,4],[1,3],[2,5],[1,2],[8,15],[4,7],[8,13],[4,6],[8,11],[4,5],[10,11],[1,1],[5,4],[6,4],[7,4],[2,1],[9,4],[5,2],[3,1],[7,2],[4,1],[9,2],[5,1],[6,1],[7,1],[8,1],[9,1],[10,1],[11,1],[12,1],[14,1],[16,1],[20,1],[25,1],[33,1],[40,1],[50,1],[66,1],[80,1],[100,1]];
+  let best = fracs[0], bestDiff = 999;
+  for (const [a,b] of fracs) { const diff = Math.abs(n - a/b); if (diff < bestDiff) { bestDiff = diff; best = [a,b]; } }
+  return best[0] + '/' + best[1];
+}
+
+function fmt(dec) { return oddsMode === 'dec' ? dec.toFixed(1) : toFrac(dec); }
+
+function setOdds(mode) {
+  oddsMode = mode;
+  document.getElementById('dec-btn').classList.toggle('active', mode === 'dec');
+  document.getElementById('frac-btn').classList.toggle('active', mode === 'frac');
+  renderPlayers();
+  if (slip) renderSlip();
+}
+
+function setTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('markets-view').style.display = tab === 'markets' ? '' : 'none';
+  document.getElementById('scores-view').style.display = tab === 'scores' ? '' : 'none';
+}
+
+function renderPills() {
+  const c = document.getElementById('market-pills');
+  c.innerHTML = MARKETS.map(m =>
+    `<button class="market-pill ${m.id === selectedMarket ? 'active' : ''}" onclick="selectMarket('${m.id}',this)">${m.label}</button>`
+  ).join('');
+  updateArrows();
+  const active = c.querySelector('.market-pill.active');
+  if (active) active.scrollIntoView({block:'nearest',inline:'center'});
+}
+
+function updateArrows() {
+  const idx = MARKETS.findIndex(m => m.id === selectedMarket);
+  document.getElementById('pill-prev').disabled = idx === 0;
+  document.getElementById('pill-next').disabled = idx === MARKETS.length - 1;
+}
+
+function shiftMarket(dir) {
+  const idx = MARKETS.findIndex(m => m.id === selectedMarket);
+  const next = idx + dir;
+  if (next < 0 || next >= MARKETS.length) return;
+  selectedMarket = MARKETS[next].id;
+  renderPills();
+  renderPlayers();
+}
+
+function selectMarket(id, el) {
+  selectedMarket = id;
+  document.querySelectorAll('.market-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  updateArrows();
+  renderPlayers();
+}
+
+function initials(name) { return name.slice(0, 2).toUpperCase(); }
+
+function renderPlayers() {
+  const prices = PRICES[selectedMarket];
+  const container = document.getElementById('player-list');
+  const mLabel = MARKETS.find(m => m.id === selectedMarket).label;
+  let html = `<div class="market-label">${mLabel}</div>`;
+  const sorted = Object.entries(prices).sort((a, b) => a[1] - b[1]);
+  const minPrice = sorted[0][1];
+  for (const [player, price] of sorted) {
+    const isSel = slip && slip.player === player && slip.market === selectedMarket;
+    const isFav = price === minPrice;
+    html += `<div class="player-row ${isSel ? 'selected' : ''}" onclick="selectPlayer('${player}',${price},'${selectedMarket}')">
+      <div class="player-avatar">${initials(player)}</div>
+      <div class="player-name">${player}</div>
+      <div class="price-pill ${isFav ? 'fav' : ''}">${fmt(price)}</div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function selectPlayer(player, price, market) {
+  if (slip && slip.player === player && slip.market === market) {
+    slip = null; slipOpen = false;
+    renderPlayers(); renderSlip(); return;
+  }
+  slip = {player, price, market, stake: ''};
+  slipOpen = true;
+  renderPlayers(); renderSlip();
+}
+
+function renderSlip() {
+  const open = document.getElementById('slip-open');
+  const collapsed = document.getElementById('slip-collapsed');
+  if (!slip) {
+    open.innerHTML = `<div class="betslip-hint" style="text-align:center;padding:6px 0">Select a player to add to bet slip</div>`;
+    collapsed.style.display = 'none'; open.style.display = ''; return;
+  }
+  if (!slipOpen) {
+    collapsed.style.display = 'flex'; open.style.display = 'none';
+    document.getElementById('slip-summary').textContent = `${bettorName || 'Who?'} · ${slip.player} @ ${fmt(slip.price)}${slip.stake ? ' · €' + slip.stake : ''}`;
+    return;
+  }
+  collapsed.style.display = 'none'; open.style.display = '';
+  const mLabel = MARKETS.find(m => m.id === slip.market).label;
+  const stake = parseFloat(slip.stake) || 0;
+  const ret = stake > 0 ? (stake * slip.price).toFixed(2) : '—';
+  const nameOptions = ALL_PLAYERS.map(p => `<option value="${p}" ${p === bettorName ? 'selected' : ''}>${p}</option>`).join('');
+  const canConfirm = stake > 0 && bettorName;
+  open.innerHTML = `
+    <div class="betslip-selection">
+      <div class="betslip-sel-top">
+        <div>
+          <div class="betslip-player">${slip.player}</div>
+          <div class="betslip-market">${mLabel}</div>
+        </div>
+        <button class="clear-btn" onclick="clearSlip()">✕ Remove</button>
+      </div>
+      <div style="font-size:13px;margin-top:4px">Odds: <span class="betslip-price">${fmt(slip.price)}</span></div>
+    </div>
+    <div class="stake-row">
+      <span class="stake-label">Your name</span>
+      <select class="stake-input" id="name-sel" onchange="updateName(this.value)" style="flex:1">
+        <option value="" disabled ${!bettorName ? 'selected' : ''}>Select…</option>
+        ${nameOptions}
+      </select>
+    </div>
+    <div class="stake-row">
+      <span class="stake-label">Stake (€)</span>
+      <input class="stake-input" id="stake-inp" type="number" min="1" placeholder="0" value="${slip.stake}" oninput="updateStake(this.value)" />
+    </div>
+    <div class="returns-row">
+      <span class="returns-label">Potential return</span>
+      <span class="returns-val">€${ret}</span>
+    </div>
+    <button class="confirm-btn" ${canConfirm ? '' : 'disabled'} onclick="confirmBet()">Confirm bet</button>
+  `;
+}
+
+function updateName(v) {
+  bettorName = v; renderSlip();
+}
+
+function updateStake(v) {
+  if (slip) { slip.stake = v; renderSlip(); const i = document.getElementById('stake-inp'); if(i) i.focus(); }
+}
+
+function clearSlip() {
+  slip = null; slipOpen = false;
+  renderPlayers(); renderSlip();
+}
+
+function toggleSlip() { slipOpen = !slipOpen; renderSlip(); }
+
+function confirmBet() {
+  if (!slip || !bettorName) return;
+  showToast(`✓ ${bettorName}: ${slip.player}, €${slip.stake} @ ${fmt(slip.price)}`);
+  slip = null; slipOpen = false;
+  renderPlayers(); renderSlip();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+
+function renderScores() {
+  const rLabels = ['R1','R2','R3','R4'];
+  const hasAnyScores = Object.values(SCORES).some(s => s.some(v => v !== null));
+  const scoreTable = document.getElementById('score-table');
+  if (!hasAnyScores) {
+    scoreTable.innerHTML = `<div style="padding:24px;text-align:center;font-size:13px;color:#888">Scores will appear here after each round</div>`;
+    return;
+  }
+  let html = `<div class="score-row header-row">
+    <span class="score-hdr" style="text-align:left">Player</span>
+    ${rLabels.map(r => `<span class="score-hdr">${r}</span>`).join('')}
+    <span class="score-hdr total">Total</span>
+  </div>`;
+  const players = Object.entries(SCORES)
+    .map(([p, s]) => ({p, scores: s, total: s.reduce((a, v) => a + (v || 0), 0)}))
+    .filter(({total}) => total > 0)
+    .sort((a, b) => b.total - a.total);
+  const maxTotal = players[0]?.total || 0;
+  players.forEach(({p, scores, total}) => {
+    html += `<div class="score-row">
+      <span class="score-name">${p}</span>
+      ${scores.map(s => s == null ? `<span class="score-cell">—</span>` : `<span class="score-cell">${s}</span>`).join('')}
+      <span class="score-cell total ${total === maxTotal ? 'winner' : ''}">${total}</span>
+    </div>`;
+  });
+  scoreTable.innerHTML = html;
+}
+
+renderPills();
+renderPlayers();
+renderSlip();
+renderScores();
+</script>
+</body>
+</html>

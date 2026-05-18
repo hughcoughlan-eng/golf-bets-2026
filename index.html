@@ -254,8 +254,9 @@ function renderSlip() {
   }
   collapsed.style.display = 'none'; open.style.display = '';
   const mLabel = MARKETS.find(m => m.id === slip.market).label;
-  const stake = parseFloat(slip.stake)||0;
-  const ret = stake > 0 ? (stake * slip.price).toFixed(2) : '—';
+  const maxStake = Math.floor(200 / slip.price);
+  const stake = Math.min(parseFloat(slip.stake)||0, maxStake);
+  const ret = stake > 0 ? (stake * slip.price).toFixed(2) : '-';
   const nameOptions = ALL_PLAYERS.map(p => `<option value="${p}" ${p===bettorName?'selected':''}>${p}</option>`).join('');
   const canConfirm = stake > 0 && bettorName;
   open.innerHTML = `
@@ -278,11 +279,15 @@ function renderSlip() {
     </div>
     <div class="stake-row">
       <span class="stake-label">Stake (€)</span>
-      <input class="stake-input" id="stake-inp" type="number" min="1" placeholder="0" value="${slip.stake}" oninput="updateStake(this.value)" />
+      <input class="stake-input" id="stake-inp" type="number" min="1" max="${maxStake}" placeholder="0" value="${slip.stake}" oninput="updateStake(this.value)" />
+    </div>
+    <div class="returns-row">
+      <span class="returns-label">Max stake</span>
+      <span style="font-size:12px;color:#888">€${maxStake} (max payout €200)</span>
     </div>
     <div class="returns-row">
       <span class="returns-label">Potential return</span>
-      <span class="returns-val">€${ret}</span>
+      <span class="returns-val">EUR ${ret}</span>
     </div>
     <button class="confirm-btn" id="confirm-btn" ${canConfirm?'':'disabled'} onclick="confirmBet()">Confirm bet</button>
   `;
@@ -291,8 +296,14 @@ function renderSlip() {
 function updateName(v) { bettorName = v; renderSlip(); }
 function updateStake(v) {
   if (!slip) return;
-  slip.stake = v;
-  const stake = parseFloat(v) || 0;
+  const maxStake = Math.floor(200 / slip.price);
+  let stake = parseFloat(v) || 0;
+  if (stake > maxStake) {
+    stake = maxStake;
+    const inp = document.getElementById('stake-inp');
+    if (inp) inp.value = maxStake;
+  }
+  slip.stake = stake;
   const ret = stake > 0 ? (stake * slip.price).toFixed(2) : '-';
   const retEl = document.querySelector('.returns-val');
   if (retEl) retEl.textContent = 'EUR ' + ret;

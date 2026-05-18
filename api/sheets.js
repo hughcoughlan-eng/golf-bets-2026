@@ -66,7 +66,7 @@ export default async function handler(req, res) {
       try {
         const result = await sheets.spreadsheets.values.get({
           spreadsheetId: SHEET_ID,
-          range: 'Players and scores!A2:E30',
+          range: 'Players and scores!A2:E14',
         });
         const rows = result.data.values || [];
         const scores = {};

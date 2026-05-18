@@ -66,20 +66,19 @@ export default async function handler(req, res) {
       try {
         const result = await sheets.spreadsheets.values.get({
           spreadsheetId: SHEET_ID,
-          range: 'Players and scores!A2:G30',
+          range: 'Players and scores!A2:E30',
         });
         const rows = result.data.values || [];
         const scores = {};
         for (const row of rows) {
           const player = (row[0] || '').trim();
-          if (!player) continue;
-          // Columns D-G = index 3-6 for R1-R4
+          if (!player || player.toLowerCase().startsWith('stake')) continue;
+          // Columns B-E = index 1-4 for R1-R4
           scores[player] = [
+            row[1] ? parseFloat(row[1]) || null : null,
+            row[2] ? parseFloat(row[2]) || null : null,
             row[3] ? parseFloat(row[3]) || null : null,
-            row[8] ? parseFloat(row[8]) || null : null,
             row[4] ? parseFloat(row[4]) || null : null,
-            row[5] ? parseFloat(row[5]) || null : null,
-            row[6] ? parseFloat(row[6]) || null : null,
           ];
         }
         return res.status(200).json({ scores });
@@ -121,5 +120,3 @@ export default async function handler(req, res) {
  
   return res.status(405).json({ error: 'Method not allowed' });
 }
- 
-

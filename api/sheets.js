@@ -64,23 +64,22 @@ export default async function handler(req, res) {
 
     if (action === 'scores') {
       try {
-        // Read player names and scores — columns A (name), H-K (R1-R4 net scores)
-        // Adjust range if your scores columns differ
         const result = await sheets.spreadsheets.values.get({
           spreadsheetId: SHEET_ID,
-          range: 'Players and scores!A2:K30',
+          range: 'Players and scores!A2:G30',
         });
         const rows = result.data.values || [];
         const scores = {};
         for (const row of rows) {
           const player = (row[0] || '').trim();
           if (!player) continue;
-          // Columns H-K = index 7-10 for R1-R4
+          // Columns D-G = index 3-6 for R1-R4
           scores[player] = [
-            row[7] ? parseFloat(row[7]) || null : null,
+            row[3] ? parseFloat(row[3]) || null : null,
             row[8] ? parseFloat(row[8]) || null : null,
-            row[9] ? parseFloat(row[9]) || null : null,
-            row[10] ? parseFloat(row[10]) || null : null,
+            row[4] ? parseFloat(row[4]) || null : null,
+            row[5] ? parseFloat(row[5]) || null : null,
+            row[6] ? parseFloat(row[6]) || null : null,
           ];
         }
         return res.status(200).json({ scores });

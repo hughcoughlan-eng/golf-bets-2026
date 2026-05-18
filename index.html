@@ -289,7 +289,16 @@ function renderSlip() {
 }
 
 function updateName(v) { bettorName = v; renderSlip(); }
-function updateStake(v) { if(slip){slip.stake=v; renderSlip(); const i=document.getElementById('stake-inp'); if(i)i.focus();} }
+function updateStake(v) {
+  if (!slip) return;
+  slip.stake = v;
+  const stake = parseFloat(v) || 0;
+  const ret = stake > 0 ? (stake * slip.price).toFixed(2) : '-';
+  const retEl = document.querySelector('.returns-val');
+  if (retEl) retEl.textContent = 'EUR ' + ret;
+  const btn = document.getElementById('confirm-btn');
+  if (btn) btn.disabled = !(stake > 0 && bettorName);
+}
 function clearSlip() { slip=null; slipOpen=false; renderPlayers(); renderSlip(); }
 function toggleSlip() { slipOpen=!slipOpen; renderSlip(); }
 

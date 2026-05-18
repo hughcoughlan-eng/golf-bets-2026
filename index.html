@@ -148,7 +148,13 @@ let pricesLoaded = false;
 function toFrac(dec) {
   const n = dec - 1;
   if (n <= 0) return 'EVS';
-  const fracs = [[1,4],[1,3],[2,5],[1,2],[8,15],[4,7],[8,13],[4,6],[8,11],[4,5],[10,11],[1,1],[5,4],[6,4],[7,4],[2,1],[9,4],[5,2],[3,1],[7,2],[4,1],[9,2],[5,1],[6,1],[7,1],[8,1],[9,1],[10,1],[11,1],[12,1],[14,1],[16,1],[20,1],[25,1],[33,1],[40,1],[50,1],[66,1],[80,1],[100,1],[150,1],[200,1]];
+  // For whole number decimals (e.g. 42.0), just show exact fraction (41/1)
+  if (Number.isInteger(dec) || Math.abs(dec - Math.round(dec)) < 0.01) {
+    const rounded = Math.round(dec);
+    return (rounded - 1) + '/1';
+  }
+  // For common non-integer prices use standard bookmaker fractions
+  const fracs = [[1,4],[1,3],[2,5],[1,2],[8,15],[4,7],[8,13],[4,6],[8,11],[4,5],[10,11],[1,1],[5,4],[6,4],[7,4],[2,1],[9,4],[5,2],[11,4],[3,1],[7,2],[4,1],[9,2],[5,1],[11,2],[6,1],[13,2],[7,1],[15,2],[8,1],[17,2],[9,1],[10,1],[11,1],[12,1],[14,1],[16,1],[20,1],[25,1],[33,1],[40,1],[50,1],[66,1],[80,1],[100,1]];
   let best = fracs[0], bestDiff = 999;
   for (const [a,b] of fracs) { const diff = Math.abs(n - a/b); if (diff < bestDiff) { bestDiff = diff; best = [a,b]; } }
   return best[0] + '/' + best[1];

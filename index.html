@@ -365,7 +365,7 @@ function renderScores() {
     <span class="score-hdr total">Total</span>
   </div>`;
   const players = Object.entries(SCORES)
-    .map(([p,s])=>({p, scores:s, total:s.reduce((a,v)=>a+(v||0),0)}))
+    .map(([p,s])=>({p, scores:s.slice(0,4), total:s[4]||0}))
     .filter(({total})=>total>0)
     .sort((a,b)=>b.total-a.total);
   const maxTotal = players[0]?.total||0;

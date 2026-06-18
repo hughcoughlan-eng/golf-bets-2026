@@ -137,6 +137,7 @@ const ALL_PLAYERS = ['Dave J','Ross','Cillian','Barry','Colm','Steve','Ryan','Pa
 
 let PRICES = {};
 let SCORES = {};
+let MARKET_STATUS = {};
 let oddsMode = 'frac';
 let selectedMarket = 'r1';
 let slip = null;
@@ -180,7 +181,12 @@ function setTab(tab, el) {
 
 function renderPills() {
   const c = document.getElementById('market-pills');
-  c.innerHTML = MARKETS.map(m =>
+  const openMarkets = MARKETS.filter(m => MARKET_STATUS[m.id] !== 'closed');
+  // If selected market is now closed, switch to first open one
+  if (!openMarkets.find(m => m.id === selectedMarket) && openMarkets.length > 0) {
+    selectedMarket = openMarkets[0].id;
+  }
+  c.innerHTML = openMarkets.map(m =>
     `<button class="market-pill ${m.id === selectedMarket ? 'active' : ''}" onclick="selectMarket('${m.id}',this)">${m.label}</button>`
   ).join('');
   updateArrows();
@@ -189,16 +195,18 @@ function renderPills() {
 }
 
 function updateArrows() {
-  const idx = MARKETS.findIndex(m => m.id === selectedMarket);
-  document.getElementById('pill-prev').disabled = idx === 0;
-  document.getElementById('pill-next').disabled = idx === MARKETS.length - 1;
+  const openMarkets = MARKETS.filter(m => MARKET_STATUS[m.id] !== 'closed');
+  const idx = openMarkets.findIndex(m => m.id === selectedMarket);
+  document.getElementById('pill-prev').disabled = idx <= 0;
+  document.getElementById('pill-next').disabled = idx === openMarkets.length - 1;
 }
 
 function shiftMarket(dir) {
-  const idx = MARKETS.findIndex(m => m.id === selectedMarket);
+  const openMarkets = MARKETS.filter(m => MARKET_STATUS[m.id] !== 'closed');
+  const idx = openMarkets.findIndex(m => m.id === selectedMarket);
   const next = idx + dir;
-  if (next < 0 || next >= MARKETS.length) return;
-  selectedMarket = MARKETS[next].id;
+  if (next < 0 || next >= openMarkets.length) return;
+  selectedMarket = openMarkets[next].id;
   renderPills();
   renderPlayers();
 }
@@ -366,14 +374,14 @@ function renderScores() {
   </div>`;
   const players = Object.entries(SCORES)
     .map(([p,s])=>({p, scores:s.slice(0,4), total:s[4]||0}))
-    .filter(({total})=>total>0)
-    .sort((a,b)=>b.total-a.total);
-  const maxTotal = players[0]?.total||0;
+    .filter(({scores})=>scores.some(v=>v!==null))
+    .sort((a,b)=>b.total-a.total||b.scores.reduce((x,v)=>x+(v||0),0)-a.scores.reduce((x,v)=>x+(v||0),0));
+  const maxTotal = players.find(({total})=>total>0)?.total||0;
   players.forEach(({p,scores,total})=>{
     html+=`<div class="score-row">
       <span class="score-name">${p}</span>
       ${scores.map(s=>s==null?`<span class="score-cell">—</span>`:`<span class="score-cell">${s}</span>`).join('')}
-      <span class="score-cell total ${total===maxTotal?'leader':''}">${total}</span>
+      <span class="score-cell total ${total===maxTotal&&maxTotal>0?'leader':''}">${total>0?total:'—'}</span>
     </div>`;
   });
   scoreTable.innerHTML = html;
@@ -396,6 +404,7 @@ async function fetchPrices() {
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
     PRICES = data.prices;
+    MARKET_STATUS = data.marketStatus || {};
     pricesLoaded = true;
     dot.classList.remove('stale');
     const now = new Date();

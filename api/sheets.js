@@ -35,6 +35,27 @@ export default async function handler(req, res) {
 
     if (action === 'prices') {
       try {
+        // Read market statuses from Inputs tab (E2:F6)
+        const statusResult = await sheets.spreadsheets.values.get({
+          spreadsheetId: SHEET_ID,
+          range: 'Inputs!E2:F6',
+        });
+        const statusRows = statusResult.data.values || [];
+        const marketStatus = {};
+        const marketKeyMap = {
+          'Winner - Round 1 - Portsalon': 'r1',
+          'Winner - Round 2 - Sandy Hills': 'r2',
+          'Winner - Round 3 - St. Pats': 'r3',
+          'Winner - Round 4 - Old Tom Morris': 'r4',
+          'Overall winner': 'overall',
+        };
+        for (const row of statusRows) {
+          const name = (row[0] || '').trim();
+          const status = (row[1] || 'open').trim().toLowerCase();
+          const key = marketKeyMap[name];
+          if (key) marketStatus[key] = status;
+        }
+
         const result = await sheets.spreadsheets.values.get({
           spreadsheetId: SHEET_ID,
           range: 'Price Matrix!A4:F17',
@@ -55,7 +76,7 @@ export default async function handler(req, res) {
           });
         }
 
-        return res.status(200).json({ prices });
+        return res.status(200).json({ prices, marketStatus });
       } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'Failed to read prices', detail: err.message });

@@ -139,7 +139,7 @@ let PRICES = {};
 let SCORES = {};
 let MARKET_STATUS = {};
 let oddsMode = 'frac';
-let selectedMarket = 'r1';
+let selectedMarket = 'r2';
 let slip = null;
 let slipOpen = false;
 let bettorName = '';
@@ -410,6 +410,7 @@ async function fetchPrices() {
     const now = new Date();
     document.getElementById('last-updated').textContent =
       `Prices updated ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+    renderPills();
     renderPlayers();
   } catch(err) {
     dot.classList.add('stale');
@@ -435,7 +436,6 @@ async function fetchScores() {
 }
 
 // ── Init & polling ────────────────────────────────────────────
-renderPills();
 renderPlayers();
 renderSlip();
 fetchPrices();

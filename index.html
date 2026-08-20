@@ -80,7 +80,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div class="header">
     <div class="header-top">
       <div>
-        <div class="title">Donegal Golf 2026 <span class="refresh-indicator" id="refresh-dot" title="Live prices"></span></div>
+        <div class="title" id="app-title">Golf 2026 <span class="refresh-indicator" id="refresh-dot" title="Live prices"></span></div>
         <div class="subtitle">Win markets</div>
       </div>
       <div class="toggle-wrap">
@@ -439,6 +439,9 @@ async function fetchConfig() {
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
     ALL_PLAYERS = data.players || [];
+    if (data.competitionName) {
+      document.getElementById('app-title').textContent = data.competitionName;
+    }
   } catch(err) {
     console.warn('Could not load config', err);
   }

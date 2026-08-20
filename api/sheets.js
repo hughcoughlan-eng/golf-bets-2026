@@ -37,10 +37,11 @@ export default async function handler(req, res) {
     // ── Config: markets + players from Inputs tab ──────────────
     if (action === 'config') {
       try {
-        // Read markets (E2:F20) and players (H2:H30) from Inputs
-        const [marketsResult, playersResult] = await Promise.all([
+        // Read markets (E2:F20), players (H2:H30) and competition name (C2) from Inputs
+        const [marketsResult, playersResult, nameResult] = await Promise.all([
           sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: 'Inputs!E2:F20' }),
           sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: 'Inputs!H2:H30' }),
+          sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: 'Inputs!C2' }),
         ]);
 
         const marketRows = (marketsResult.data.values || []).filter(r => (r[0] || '').trim());
@@ -54,7 +55,9 @@ export default async function handler(req, res) {
           .map(r => (r[0] || '').trim())
           .filter(Boolean);
 
-        return res.status(200).json({ markets, players });
+        const competitionName = ((nameResult.data.values || [[]])[0] || [])[0] || 'Golf 2026';
+
+        return res.status(200).json({ markets, players, competitionName });
       } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'Failed to read config', detail: err.message });

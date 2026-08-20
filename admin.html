@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golf 2026 – Admin</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; }
+.app { max-width: 420px; margin: 0 auto; background: #fff; min-height: 100vh; padding-bottom: 40px; }
+.header { padding: 16px; border-bottom: 0.5px solid #e0e0dc; }
+.title { font-size: 15px; font-weight: 600; }
+.subtitle { font-size: 12px; color: #888; margin-top: 2px; }
+.section { padding: 16px; }
+.section-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+.market-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #fff; border: 0.5px solid #e0e0dc; border-radius: 8px; margin-bottom: 8px; }
+.market-name { font-size: 13px; color: #1a1a1a; flex: 1; padding-right: 12px; line-height: 1.3; }
+.toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #e0e0dc; border-radius: 26px; transition: 0.2s; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+input:checked + .slider { background: #3b6d11; }
+input:checked + .slider:before { transform: translateX(18px); }
+.status-badge { font-size: 11px; margin-right: 10px; color: #888; }
+.status-badge.open { color: #3b6d11; }
+.status-badge.closed { color: #c0392b; }
+.loading { padding: 32px; text-align: center; font-size: 13px; color: #888; }
+.toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 200; display: none; white-space: nowrap; }
+.toast.error { background: #c0392b; }
+.back-link { display: inline-block; font-size: 12px; color: #888; text-decoration: none; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="title">Admin ⚙️</div>
+    <div class="subtitle">Donegal Golf 2026</div>
+    <a class="back-link" href="/">← Back to app</a>
+  </div>
+  <div class="section">
+    <div class="section-label">Market controls</div>
+    <div id="market-list"><div class="loading">Loading markets…</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let markets = [];
+
+async function fetchMarkets() {
+  try {
+    const res = await fetch('/api/sheets?action=marketStatus');
+    const data = await res.json();
+    markets = data.markets;
+    renderMarkets();
+  } catch(err) {
+    document.getElementById('market-list').innerHTML = '<div class="loading">Failed to load markets</div>';
+  }
+}
+
+function renderMarkets() {
+  const container = document.getElementById('market-list');
+  container.innerHTML = markets.map((m, i) => `
+    <div class="market-row">
+      <div class="market-name">${m.name}</div>
+      <span class="status-badge ${m.status}" id="badge-${i}">${m.status}</span>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-${i}" ${m.status === 'open' ? 'checked' : ''} onchange="toggleMarket(${i}, this.checked)">
+        <span class="slider"></span>
+      </label>
+    </div>
+  `).join('');
+}
+
+async function toggleMarket(idx, isOpen) {
+  const market = markets[idx];
+  const newStatus = isOpen ? 'open' : 'closed';
+  const badge = document.getElementById(`badge-${idx}`);
+  const toggle = document.getElementById(`toggle-${idx}`);
+
+  // Optimistic UI update
+  badge.textContent = newStatus;
+  badge.className = `status-badge ${newStatus}`;
+  markets[idx].status = newStatus;
+
+  try {
+    const res = await fetch('/api/sheets?action=marketStatus', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ marketName: market.name, status: newStatus }),
+    });
+    if (!res.ok) throw new Error('Failed');
+    showToast(`${market.name} ${newStatus === 'open' ? 'opened ✓' : 'closed ✓'}`);
+  } catch(err) {
+    // Revert on failure
+    markets[idx].status = isOpen ? 'closed' : 'open';
+    badge.textContent = markets[idx].status;
+    badge.className = `status-badge ${markets[idx].status}`;
+    toggle.checked = !isOpen;
+    showToast('Failed to update — try again', true);
+  }
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2500);
+}
+
+fetchMarkets();
+</script>
+</body>
+</html>

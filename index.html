@@ -126,21 +126,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <div class="toast" id="toast"></div>
 
 <script>
-const MARKETS = [
-  {id:'r1', label:'Winner - Round 1 - Portsalon'},
-  {id:'r2', label:'Winner - Round 2 - Sandy Hills'},
-  {id:'r3', label:'Winner - Round 3 - St. Pats'},
-  {id:'r4', label:'Winner - Round 4 - Old Tom Morris'},
-  {id:'overall', label:'Overall winner'},
-];
-
-const ALL_PLAYERS = ['Dave J','Ross','Cillian','Barry','Colm','Steve','Ryan','Paddy','Paul','Hugh','Gordon','Trev','Noel'];
-
+let MARKETS = [];
+let ALL_PLAYERS = [];
 let PRICES = {};
 let SCORES = {};
 let MARKET_STATUS = {};
+let NUM_ROUNDS = 4;
 let oddsMode = 'frac';
-let selectedMarket = 'r2';
+let selectedMarket = null;
 let slip = null;
 let slipOpen = false;
 let bettorName = '';
@@ -369,25 +362,25 @@ async function confirmBet() {
 
 // ── Leaderboard ───────────────────────────────────────────────
 function renderScores() {
-  const rLabels = ['R1','R2','R3','R4'];
+  const rLabels = Array.from({length: NUM_ROUNDS}, (_, i) => `R${i+1}`);
   const scoreTable = document.getElementById('score-table');
   const hasAnyScores = Object.values(SCORES).some(s => Array.isArray(s) && s.some(v => v !== null));
   if (!hasAnyScores) {
     scoreTable.innerHTML = `<div style="padding:24px;text-align:center;font-size:13px;color:#888">Scores will appear here after each round</div>`;
     return;
   }
-  let html = `<div class="score-row header-row">
+  let html = `<div class="score-row header-row" style="grid-template-columns: 1fr repeat(${NUM_ROUNDS}, 32px) 44px">
     <span class="score-hdr" style="text-align:left">Player</span>
     ${rLabels.map(r=>`<span class="score-hdr">${r}</span>`).join('')}
     <span class="score-hdr total">Total</span>
   </div>`;
   const players = Object.entries(SCORES)
-    .map(([p,s])=>({p, scores:s.slice(0,4), total:s[4]||0}))
+    .map(([p,s])=>({p, scores:s.slice(0,NUM_ROUNDS), total:s[NUM_ROUNDS]||0}))
     .filter(({scores})=>scores.some(v=>v!==null))
     .sort((a,b)=>b.total-a.total||b.scores.reduce((x,v)=>x+(v||0),0)-a.scores.reduce((x,v)=>x+(v||0),0));
   const maxTotal = players.find(({total})=>total>0)?.total||0;
   players.forEach(({p,scores,total})=>{
-    html+=`<div class="score-row">
+    html+=`<div class="score-row" style="grid-template-columns: 1fr repeat(${NUM_ROUNDS}, 32px) 44px">
       <span class="score-name">${p}</span>
       ${scores.map(s=>s==null?`<span class="score-cell">—</span>`:`<span class="score-cell">${s}</span>`).join('')}
       <span class="score-cell total ${total===maxTotal&&maxTotal>0?'leader':''}">${total>0?total:'—'}</span>
@@ -414,6 +407,15 @@ async function fetchPrices() {
     const data = await res.json();
     PRICES = data.prices;
     MARKET_STATUS = data.marketStatus || {};
+    // Update MARKETS from API so labels stay in sync
+    if (data.markets && data.markets.length > 0) {
+      MARKETS = data.markets;
+      // Set default selected market to first open one if not set
+      if (!selectedMarket || !MARKETS.find(m => m.id === selectedMarket)) {
+        const firstOpen = MARKETS.find(m => MARKET_STATUS[m.id] !== 'closed');
+        if (firstOpen) selectedMarket = firstOpen.id;
+      }
+    }
     pricesLoaded = true;
     dot.classList.remove('stale');
     const now = new Date();
@@ -431,15 +433,26 @@ async function fetchPrices() {
   }
 }
 
+async function fetchConfig() {
+  try {
+    const res = await fetch('/api/sheets?action=config');
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    ALL_PLAYERS = data.players || [];
+  } catch(err) {
+    console.warn('Could not load config', err);
+  }
+}
+
 async function fetchScores() {
   try {
     const res = await fetch('/api/sheets?action=scores');
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
     SCORES = data.scores;
+    if (data.numRounds) NUM_ROUNDS = data.numRounds;
     renderScores();
   } catch(err) {
-    // Scores failing silently is ok — not critical
     console.warn('Could not load scores', err);
   }
 }
@@ -447,6 +460,7 @@ async function fetchScores() {
 // ── Init & polling ────────────────────────────────────────────
 renderPlayers();
 renderSlip();
+fetchConfig();
 fetchPrices();
 fetchScores();
 

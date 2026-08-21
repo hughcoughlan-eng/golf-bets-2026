@@ -3,16 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Golf 2026 – Admin</title>
+<title>Admin</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; }
-.app { max-width: 420px; margin: 0 auto; background: #fff; min-height: 100vh; padding-bottom: 40px; }
+.app { max-width: 520px; margin: 0 auto; background: #fff; min-height: 100vh; padding-bottom: 40px; }
 .header { padding: 16px; border-bottom: 0.5px solid #e0e0dc; }
 .title { font-size: 15px; font-weight: 600; }
 .subtitle { font-size: 12px; color: #888; margin-top: 2px; }
+.back-link { display: inline-block; font-size: 12px; color: #888; text-decoration: none; margin-top: 4px; }
+.tabs { display: flex; border-bottom: 0.5px solid #e0e0dc; }
+.tab { flex: 1; padding: 10px; font-size: 13px; font-family: inherit; border: none; background: transparent; cursor: pointer; color: #888; border-bottom: 2px solid transparent; margin-bottom: -0.5px; }
+.tab.active { color: #1a1a1a; font-weight: 500; border-bottom-color: #1a1a1a; }
 .section { padding: 16px; }
 .section-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+
+/* Market toggles */
 .market-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #fff; border: 0.5px solid #e0e0dc; border-radius: 8px; margin-bottom: 8px; }
 .market-name { font-size: 13px; color: #1a1a1a; flex: 1; padding-right: 12px; line-height: 1.3; }
 .toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
@@ -24,22 +30,55 @@ input:checked + .slider:before { transform: translateX(18px); }
 .status-badge { font-size: 11px; margin-right: 10px; color: #888; }
 .status-badge.open { color: #3b6d11; }
 .status-badge.closed { color: #c0392b; }
+
+/* Probability editor */
+.prob-market-selector { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; }
+.prob-market-selector::-webkit-scrollbar { display: none; }
+.prob-tab { font-size: 11px; padding: 5px 12px; border-radius: 20px; border: 0.5px solid #e0e0dc; background: transparent; color: #888; cursor: pointer; white-space: nowrap; font-family: inherit; flex-shrink: 0; }
+.prob-tab.active { background: #1a1a1a; color: #fff; border-color: transparent; }
+.prob-table { width: 100%; border-collapse: collapse; }
+.prob-table th { font-size: 11px; color: #888; text-align: left; padding: 6px 8px; border-bottom: 0.5px solid #e0e0dc; }
+.prob-table th.right { text-align: right; }
+.prob-table td { padding: 4px 8px; border-bottom: 0.5px solid #f0f0ed; }
+.prob-table tr:last-child td { border-bottom: none; }
+.player-cell { font-size: 13px; }
+.prob-input { width: 70px; font-size: 13px; font-family: inherit; padding: 5px 8px; border: 0.5px solid #e0e0dc; border-radius: 6px; text-align: right; background: #fff; color: #1a1a1a; outline: none; }
+.prob-input:focus { border-color: #888; }
+.total-row td { font-weight: 600; font-size: 13px; padding-top: 8px; }
+.total-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+.total-pill.ok { background: #eaf3de; color: #3b6d11; }
+.total-pill.over { background: #fdecea; color: #c0392b; }
+.total-pill.under { background: #fff3cd; color: #856404; }
+.save-btn { width: 100%; margin-top: 14px; padding: 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.save-btn:disabled { opacity: 0.35; cursor: default; }
 .loading { padding: 32px; text-align: center; font-size: 13px; color: #888; }
 .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 200; display: none; white-space: nowrap; }
 .toast.error { background: #c0392b; }
-.back-link { display: inline-block; font-size: 12px; color: #888; text-decoration: none; margin-top: 4px; }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
     <div class="title">Admin ⚙️</div>
-    <div class="subtitle">Donegal Golf 2026</div>
+    <div class="subtitle" id="comp-name">Golf Betting</div>
     <a class="back-link" href="/">← Back to app</a>
   </div>
-  <div class="section">
-    <div class="section-label">Market controls</div>
-    <div id="market-list"><div class="loading">Loading markets…</div></div>
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('markets', this)">Markets</button>
+    <button class="tab" onclick="setTab('probs', this)">Probabilities</button>
+  </div>
+
+  <!-- Markets tab -->
+  <div id="tab-markets" class="section">
+    <div class="section-label">Open / close markets</div>
+    <div id="market-list"><div class="loading">Loading…</div></div>
+  </div>
+
+  <!-- Probabilities tab -->
+  <div id="tab-probs" class="section" style="display:none">
+    <div class="section-label">Adjust 100% lines</div>
+    <div class="prob-market-selector" id="prob-tabs"></div>
+    <div id="prob-editor"><div class="loading">Loading…</div></div>
   </div>
 </div>
 
@@ -47,7 +86,19 @@ input:checked + .slider:before { transform: translateX(18px); }
 
 <script>
 let markets = [];
+let probData = { markets: [], players: [], data: [] };
+let selectedProbMarket = 0;
+let editedValues = []; // current edited column values
 
+// ── Tab switching ─────────────────────────────────────────────
+function setTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-markets').style.display = tab === 'markets' ? '' : 'none';
+  document.getElementById('tab-probs').style.display = tab === 'probs' ? '' : 'none';
+}
+
+// ── Market toggles ────────────────────────────────────────────
 async function fetchMarkets() {
   try {
     const res = await fetch('/api/sheets?action=marketStatus');
@@ -55,13 +106,12 @@ async function fetchMarkets() {
     markets = data.markets;
     renderMarkets();
   } catch(err) {
-    document.getElementById('market-list').innerHTML = '<div class="loading">Failed to load markets</div>';
+    document.getElementById('market-list').innerHTML = '<div class="loading">Failed to load</div>';
   }
 }
 
 function renderMarkets() {
-  const container = document.getElementById('market-list');
-  container.innerHTML = markets.map((m, i) => `
+  document.getElementById('market-list').innerHTML = markets.map((m, i) => `
     <div class="market-row">
       <div class="market-name">${m.name}</div>
       <span class="status-badge ${m.status}" id="badge-${i}">${m.status}</span>
@@ -78,12 +128,9 @@ async function toggleMarket(idx, isOpen) {
   const newStatus = isOpen ? 'open' : 'closed';
   const badge = document.getElementById(`badge-${idx}`);
   const toggle = document.getElementById(`toggle-${idx}`);
-
-  // Optimistic UI update
   badge.textContent = newStatus;
   badge.className = `status-badge ${newStatus}`;
   markets[idx].status = newStatus;
-
   try {
     const res = await fetch('/api/sheets?action=marketStatus', {
       method: 'POST',
@@ -93,7 +140,6 @@ async function toggleMarket(idx, isOpen) {
     if (!res.ok) throw new Error('Failed');
     showToast(`${market.name} ${newStatus === 'open' ? 'opened ✓' : 'closed ✓'}`);
   } catch(err) {
-    // Revert on failure
     markets[idx].status = isOpen ? 'closed' : 'open';
     badge.textContent = markets[idx].status;
     badge.className = `status-badge ${markets[idx].status}`;
@@ -102,6 +148,116 @@ async function toggleMarket(idx, isOpen) {
   }
 }
 
+// ── Probabilities ─────────────────────────────────────────────
+async function fetchProbabilities() {
+  try {
+    const res = await fetch('/api/sheets?action=probabilities');
+    const data = await res.json();
+    probData = data;
+    selectedProbMarket = 0;
+    loadMarketValues(0);
+    renderProbTabs();
+    renderProbEditor();
+  } catch(err) {
+    document.getElementById('prob-editor').innerHTML = '<div class="loading">Failed to load</div>';
+  }
+}
+
+function loadMarketValues(marketIdx) {
+  selectedProbMarket = marketIdx;
+  editedValues = probData.players.map((_, pi) =>
+    probData.data[pi] ? (probData.data[pi][marketIdx] || 0) : 0
+  );
+}
+
+function renderProbTabs() {
+  document.getElementById('prob-tabs').innerHTML = probData.markets.map((m, i) =>
+    `<button class="prob-tab ${i === selectedProbMarket ? 'active' : ''}" onclick="switchProbMarket(${i})">${m}</button>`
+  ).join('');
+}
+
+function switchProbMarket(idx) {
+  loadMarketValues(idx);
+  renderProbTabs();
+  renderProbEditor();
+}
+
+function getTotal() {
+  return editedValues.reduce((a, v) => a + (parseFloat(v) || 0), 0);
+}
+
+function renderProbEditor() {
+  const total = getTotal();
+  const totalClass = Math.abs(total - 100) < 0.01 ? 'ok' : total > 100 ? 'over' : 'under';
+  const totalLabel = Math.abs(total - 100) < 0.01 ? '100 ✓' : total.toFixed(1);
+
+  let html = `<table class="prob-table">
+    <thead><tr>
+      <th>Player</th>
+      <th class="right">Probability (%)</th>
+    </tr></thead>
+    <tbody>`;
+
+  probData.players.forEach((player, pi) => {
+    html += `<tr>
+      <td class="player-cell">${player}</td>
+      <td style="text-align:right">
+        <input class="prob-input" type="number" step="0.5" min="0" max="100"
+          value="${editedValues[pi] || 0}"
+          oninput="updateProb(${pi}, this.value)" />
+      </td>
+    </tr>`;
+  });
+
+  html += `</tbody>
+    <tfoot><tr class="total-row">
+      <td>Total</td>
+      <td style="text-align:right"><span class="total-pill ${totalClass}" id="total-pill">${totalLabel}</span></td>
+    </tr></tfoot>
+  </table>
+  <button class="save-btn" id="save-prob-btn" onclick="saveProbs()">Save ${probData.markets[selectedProbMarket]}</button>`;
+
+  document.getElementById('prob-editor').innerHTML = html;
+}
+
+function updateProb(playerIdx, value) {
+  editedValues[playerIdx] = parseFloat(value) || 0;
+  // Update total pill without re-rendering whole table
+  const total = getTotal();
+  const totalClass = Math.abs(total - 100) < 0.01 ? 'ok' : total > 100 ? 'over' : 'under';
+  const totalLabel = Math.abs(total - 100) < 0.01 ? '100 ✓' : total.toFixed(1);
+  const pill = document.getElementById('total-pill');
+  if (pill) { pill.className = `total-pill ${totalClass}`; pill.textContent = totalLabel; }
+}
+
+async function saveProbs() {
+  const btn = document.getElementById('save-prob-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch('/api/sheets?action=probabilities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        marketIndex: selectedProbMarket,
+        values: editedValues,
+        players: probData.players,
+      }),
+    });
+    if (!res.ok) throw new Error('Failed');
+    // Update local data
+    probData.players.forEach((_, pi) => {
+      if (probData.data[pi]) probData.data[pi][selectedProbMarket] = editedValues[pi];
+    });
+    showToast(`${probData.markets[selectedProbMarket]} saved ✓`);
+  } catch(err) {
+    showToast('Failed to save — try again', true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = `Save ${probData.markets[selectedProbMarket]}`;
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -110,7 +266,20 @@ function showToast(msg, isError = false) {
   setTimeout(() => { t.style.display = 'none'; }, 2500);
 }
 
-fetchMarkets();
+// ── Init ──────────────────────────────────────────────────────
+async function init() {
+  // Get competition name
+  try {
+    const res = await fetch('/api/sheets?action=config');
+    const data = await res.json();
+    if (data.competitionName) document.getElementById('comp-name').textContent = data.competitionName;
+  } catch(e) {}
+
+  fetchMarkets();
+  fetchProbabilities();
+}
+
+init();
 </script>
 </body>
 </html>

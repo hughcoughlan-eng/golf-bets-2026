@@ -167,12 +167,87 @@ export default async function handler(req, res) {
       }
     }
 
+    // ── 100% lines read ───────────────────────────────────────
+    if (action === 'probabilities') {
+      try {
+        const result = await sheets.spreadsheets.values.get({
+          spreadsheetId: SHEET_ID,
+          range: '100% lines!A1:Z50',
+        });
+        const rows = result.data.values || [];
+        if (rows.length < 2) return res.status(200).json({ markets: [], players: [], data: [] });
+
+        // Row 0 = headers: col A empty, col B+ = market names
+        const marketNames = rows[0].slice(1).filter(Boolean);
+
+        // Rows 1+ = player data, last row may be Total
+        const playerRows = rows.slice(1).filter(r => {
+          const name = (r[0] || '').trim();
+          return name && name.toLowerCase() !== 'total';
+        });
+
+        const players = playerRows.map(r => (r[0] || '').trim());
+        const data = playerRows.map(r =>
+          marketNames.map((_, i) => {
+            const val = r[i + 1];
+            return val !== undefined && val !== '' ? parseFloat(val) || 0 : 0;
+          })
+        );
+
+        return res.status(200).json({ markets: marketNames, players, data });
+      } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Failed to read probabilities', detail: err.message });
+      }
+    }
+
     return res.status(400).json({ error: 'Unknown action' });
   }
 
   if (req.method === 'POST') {
     try {
       const { action } = req.query;
+
+      // ── Update a single market column of 100% lines ──────────
+      if (action === 'probabilities') {
+        const { marketIndex, values, players } = req.body;
+        // values = array of numbers for each player, players = array of player names
+        if (marketIndex === undefined || !values || !players) {
+          return res.status(400).json({ error: 'Missing fields' });
+        }
+
+        // Read current sheet to find correct rows
+        const result = await sheets.spreadsheets.values.get({
+          spreadsheetId: SHEET_ID,
+          range: '100% lines!A1:A50',
+        });
+        const nameRows = result.data.values || [];
+
+        // Build update: for each player find their row
+        const colLetter = String.fromCharCode(66 + parseInt(marketIndex)); // B=66, C=67...
+        const updateData = [];
+        for (let i = 0; i < players.length; i++) {
+          const rowIdx = nameRows.findIndex(r => (r[0] || '').trim() === players[i]);
+          if (rowIdx !== -1) {
+            updateData.push({
+              range: `100% lines!${colLetter}${rowIdx + 1}`,
+              values: [[values[i]]],
+            });
+          }
+        }
+
+        if (updateData.length > 0) {
+          await sheets.spreadsheets.values.batchUpdate({
+            spreadsheetId: SHEET_ID,
+            requestBody: {
+              valueInputOption: 'USER_ENTERED',
+              data: updateData,
+            },
+          });
+        }
+
+        return res.status(200).json({ success: true });
+      }
 
       // ── Update market status ────────────────────────────────
       if (action === 'marketStatus') {
